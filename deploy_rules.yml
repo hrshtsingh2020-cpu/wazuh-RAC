@@ -1,0 +1,43 @@
+name: Enterprise Wazuh RaC & Active Response CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-to-siem:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH Private Key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Sync Rules, Decoders, and Active Response Scripts to Wazuh Manager
+        env:
+          HOST: ${{ secrets.HOST }}
+          USERNAME: ${{ secrets.USERNAME }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "StrictHostKeyChecking no" >> ~/.ssh/config
+
+          echo "==> Syncing Custom Rules..."
+          scp -r rules/* $USERNAME@$HOST:/var/ossec/etc/rules/
+
+          echo "==> Syncing Custom Decoders..."
+          scp -r decoders/* $USERNAME@$HOST:/var/ossec/etc/decoders/
+
+          echo "==> Syncing Universal Active Response Scripts..."
+          scp -r active-response/bin/* $USERNAME@$HOST:/var/ossec/active-response/bin/
+
+          echo "==> Setting Correct Permissions for Wazuh User..."
+          ssh $USERNAME@$HOST "sudo chown -R ossec:ossec /var/ossec/etc/rules/ && sudo chown -R ossec:ossec /var/ossec/etc/decoders/ && sudo chmod +x /var/ossec/active-response/bin/c2_responder.py && sudo chown root:ossec /var/ossec/active-response/bin/c2_responder.py"
+
+          echo "==> Validating XML Syntax & Restarting Wazuh Manager..."
+          ssh $USERNAME@$HOST "sudo /var/ossec/bin/wazuh-analysisd -t && sudo systemctl restart wazuh-manager"
+          
+          echo "==> Deployment and Rule Synchronization Completed Successfully!"

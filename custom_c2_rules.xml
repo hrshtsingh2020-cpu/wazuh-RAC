@@ -1,0 +1,22 @@
+<group name="sysmon, c2_detection, enterprise_rac">
+  <rule id="100002" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.image">.*\\powershell\.exe$.*\\cmd\.exe$</field>
+    <field name="win.eventdata.destinationIp">^(?!10\.192\.168\.127\.).*</field>
+    <description>Potential External C2 Beaconing Detected: Suspicious Shell Connecting to External IP.</description>
+    <options>no_log</options>
+    <mitre>
+      <id>T1059</id>
+      <id>T1071</id>
+    </mitre>
+  </rule>
+  
+  <rule id="100003" level="10">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.image">.*\\nc\.exe$.*\\netcat.*</field>
+    <description>Unauthorized Netcat / Listener Utility Execution Detected.</description>
+    <mitre>
+      <id>T1095</id>
+    </mitre>
+  </rule>
+</group>

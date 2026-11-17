@@ -1,0 +1,4 @@
+<decoder name="sysmon-c2-custom">
+  <program_name>Sysmon</program_name>
+  <prematch>EventID=3</prematch>
+</decoder>
